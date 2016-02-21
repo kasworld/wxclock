@@ -139,8 +139,8 @@ class kclock(wx.Frame, FPSlogic):
             self.bgbitmap = wx.EmptyBitmap(*size.Get())
         self.clientsize = self.GetClientSizeTuple()
         self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
-        self.calfont = wx.Font(self.adj / 3, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        self.bigfont = wx.Font(self.adj, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.calfont = wx.Font(self.adj / 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.bigfont = wx.Font(self.adj * 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.mcenterx = self.clientsize[0] / 2
         self.mcentery = self.clientsize[1] / 2
         if self.rawbgimage:
@@ -206,7 +206,7 @@ class kclock(wx.Frame, FPSlogic):
                         ccc = (False, True, False)
                     self._printText(dc, str(wwx[0]),
                                     wdposx + (posx - 3) * w * 1.5,
-                                    wdposy + h + wwy * h * 1.5,
+                                    wdposy + h + wwy * h * 1.1,
                                     # wdposy self.clientsize[1] - (5-wwy)*h*1.5
                                     # ,
                                     *ccc)
@@ -217,7 +217,7 @@ class kclock(wx.Frame, FPSlogic):
         """Draws clock face and tick marks onto the faceBitmap."""
         pdc = wx.BufferedDC(None, self.bgbitmap)
         if not self.rawbgimage:
-            pdc.SetBackground(wx.Brush("white", wx.SOLID))
+            pdc.SetBackground(wx.Brush("grey", wx.SOLID))
             pdc.Clear()
         else:
             pdc.DrawBitmap(self.bgbitmap, 0, 0)
@@ -341,7 +341,7 @@ class kclock(wx.Frame, FPSlogic):
         self._printText(dc, datetext, wdposx, wdposy - self.adj * 5)
         dc.SetFont(self.calfont)
         datetext = strftime("%Y-%m-%d", localtime())
-        self._printText(dc, datetext, wdposx, wdposy - self.adj * 3)
+        self._printText(dc, datetext, wdposx, wdposy - self.adj * 2)
         self._drawCalendar(dc)
         self._drawHands(dc)
 
