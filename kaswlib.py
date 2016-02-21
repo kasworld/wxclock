@@ -455,39 +455,39 @@ def getLogger(level=logging.DEBUG, appname='noname'):
     return logger
 
 
-import Crypto.Cipher.AES
-sessionCodec = Crypto.Cipher.AES.new("1234567890123456")
+# import Crypto.Cipher.AES
+# sessionCodec = Crypto.Cipher.AES.new("1234567890123456")
 
 
-def sessionMake(idint, timet=None, int3=None, int4=None):
-    """세션 키 생성기
-    4개의 32bit int를 받아서 128bit hex string을 돌려 주는 함수
-    1개만 주는 경우 나머지는 자동으로 채운다.
-    """
-    timet = int(time.time()) if timet == None else timet
-    int3 = random.getrandbits(32) if int3 == None else int3
-    int4 = random.getrandbits(32) if int4 == None else int4
+# def sessionMake(idint, timet=None, int3=None, int4=None):
+#     """세션 키 생성기
+#     4개의 32bit int를 받아서 128bit hex string을 돌려 주는 함수
+#     1개만 주는 경우 나머지는 자동으로 채운다.
+#     """
+#     timet = int(time.time()) if timet == None else timet
+#     int3 = random.getrandbits(32) if int3 == None else int3
+#     int4 = random.getrandbits(32) if int4 == None else int4
 
-    data = struct.pack("<I", idint) + struct.pack(
-        "<I", timet) + struct.pack("<I", int3) + struct.pack("<I", int4)
-    endata = sessionCodec.encrypt(data)
-    enlist = struct.unpack("<IIII", endata)
-    return "%08x%08x%08x%08x" % enlist
+#     data = struct.pack("<I", idint) + struct.pack(
+#         "<I", timet) + struct.pack("<I", int3) + struct.pack("<I", int4)
+#     endata = sessionCodec.encrypt(data)
+#     enlist = struct.unpack("<IIII", endata)
+#     return "%08x%08x%08x%08x" % enlist
 
 
-def sessionParse(sessionKey):
-    """세션 키를 분석해서 원래 값을 만드는함수
-    4개의 int 를 돌려준다.
-    makeSessionKey 의 인자 순으로 돌려준다.
-    """
-    if not sessionKey:
-        return None
-    ints = [struct.pack("<I", int(sessionKey[a:a + 8], 16))
-            for a in range(0, 32, 8)]
-    data = "".join(ints)
-    dedata = sessionCodec.decrypt(data)
-    delist = struct.unpack("<IIII", dedata)
-    return delist
+# def sessionParse(sessionKey):
+#     """세션 키를 분석해서 원래 값을 만드는함수
+#     4개의 int 를 돌려준다.
+#     makeSessionKey 의 인자 순으로 돌려준다.
+#     """
+#     if not sessionKey:
+#         return None
+#     ints = [struct.pack("<I", int(sessionKey[a:a + 8], 16))
+#             for a in range(0, 32, 8)]
+#     data = "".join(ints)
+#     dedata = sessionCodec.decrypt(data)
+#     delist = struct.unpack("<IIII", dedata)
+#     return delist
 
 
 def getRnd2():
