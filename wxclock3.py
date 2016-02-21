@@ -197,13 +197,13 @@ class kclock(wx.Frame, FPSlogic):
             for wwx in wwl:
                 # pos is wd[1] , wwc
                 if (wwx[0]):
-                    ccc = (1, 1, 1)
+                    ccc = (True, True, True)
                     if wwx[1] == 5:
-                        ccc = (0, 0, 1)
+                        ccc = (False, True, True)
                     if wwx[1] == 6:
-                        ccc = (1, 0, 0)
+                        ccc = (True, False, False)
                     if wwx[0] == localtime()[2]:
-                        ccc = (0, 1, 0)
+                        ccc = (False, True, False)
                     self._printText(dc, str(wwx[0]),
                                     wdposx + (posx - 3) * w * 1.5,
                                     wdposy + h + wwy * h * 1.5,
@@ -217,7 +217,7 @@ class kclock(wx.Frame, FPSlogic):
         """Draws clock face and tick marks onto the faceBitmap."""
         pdc = wx.BufferedDC(None, self.bgbitmap)
         if not self.rawbgimage:
-            pdc.SetBackground(wx.Brush("black", wx.SOLID))
+            pdc.SetBackground(wx.Brush("white", wx.SOLID))
             pdc.Clear()
         else:
             pdc.DrawBitmap(self.bgbitmap, 0, 0)
