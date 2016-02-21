@@ -155,8 +155,8 @@ class kclock(wx.Frame, FPSlogic):
         for i in range(0, depth):
             cr = int(i * 255. / (depth - 1))
             dc.SetTextForeground(
-                wx.Colour(cr if r else cr * .9, cr if g else cr * .9,
-                          cr if b else cr * .9, 0x80)
+                wx.Colour(cr if r else cr * .8, cr if g else cr * .8,
+                          cr if b else cr * .8, 0x80)
             )
             dc.DrawText(pstr, max(0, -w / 2 + x + depth - i),
                         max(0, y + depth - i))
