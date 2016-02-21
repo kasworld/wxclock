@@ -229,7 +229,7 @@ class kclock(wx.Frame, FPSlogic):
         return cx + l * math.cos(rad), cy + l * math.sin(rad)
 
     def _drawClockTicks2(self, dc, cx, cy, r, c1, c2=None):
-        tw = r / 300
+        tw = r / 150
         td = max(tw / 2, 1)
         if c2:
             dc.SetPen(wx.Pen(c2, tw))
