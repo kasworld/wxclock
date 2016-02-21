@@ -206,7 +206,7 @@ class kclock(wx.Frame, FPSlogic):
                         ccc = (False, True, False)
                     self._printText(dc, str(wwx[0]),
                                     wdposx + (posx - 3) * w * 1.5,
-                                    wdposy + h + wwy * h * 1.1,
+                                    wdposy + wwy * h * 1.1,
                                     # wdposy self.clientsize[1] - (5-wwy)*h*1.5
                                     # ,
                                     *ccc)
