@@ -140,7 +140,7 @@ class kclock(wx.Frame, FPSlogic):
         self.clientsize = self.GetClientSizeTuple()
         self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
         self.calfont = wx.Font(self.adj / 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        self.bigfont = wx.Font(self.adj * 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.bigfont = wx.Font(self.adj * 1.6, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.mcenterx = self.clientsize[0] / 2
         self.mcentery = self.clientsize[1] / 2
         if self.rawbgimage:
