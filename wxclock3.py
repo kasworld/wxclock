@@ -48,7 +48,7 @@ class kclock(wx.Frame, FPSlogic):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE  # | wx.STAY_ON_TOP
         wx.Frame.__init__(self, *args, **kwds)
-        self.fps = 30
+        self.fps = 60
         self.isfullscreen = True
         self.ShowFullScreen(self.isfullscreen)
         self.rawbgimage = None
@@ -140,7 +140,7 @@ class kclock(wx.Frame, FPSlogic):
         self.clientsize = self.GetClientSizeTuple()
         self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
         self.calfont = wx.Font(self.adj / 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        self.bigfont = wx.Font(self.adj * 1.6, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.bigfont = wx.Font(self.adj * 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.mcenterx = self.clientsize[0] / 2
         self.mcentery = self.clientsize[1] / 2
         if self.rawbgimage:
@@ -158,7 +158,7 @@ class kclock(wx.Frame, FPSlogic):
                 wx.Colour(cr if r else cr * .8, cr if g else cr * .8,
                           cr if b else cr * .8, 0x80)
             )
-            dc.DrawText(pstr, max(0, -w / 2 + x + depth - i),
+            dc.DrawText(pstr, min(self.clientsize[0] - w, max(0, -w / 2 + x + depth - i)),
                         max(0, y + depth - i))
 
     def getCenterPos(self, even=True):
@@ -341,7 +341,7 @@ class kclock(wx.Frame, FPSlogic):
         self._printText(dc, datetext, wdposx, wdposy - self.adj * 5)
         dc.SetFont(self.calfont)
         datetext = strftime("%Y-%m-%d", localtime())
-        self._printText(dc, datetext, wdposx, wdposy - self.adj * 2)
+        self._printText(dc, datetext, wdposx, wdposy - self.adj * 1)
         self._drawCalendar(dc)
         self._drawHands(dc)
 

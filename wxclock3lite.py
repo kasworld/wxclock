@@ -189,7 +189,7 @@ class kclock(wx.Frame, FPSlogic):
         self._printText(dc, datetext, wdposx, wdposy - self.adj * 5)
         dc.SetFont(self.calfont)
         datetext = strftime("%Y-%m-%d", localtime())
-        self._printText(dc, datetext, wdposx, wdposy - self.adj * 2)
+        self._printText(dc, datetext, wdposx, wdposy - self.adj * 1)
         self._drawCalendar(dc)
 
 if __name__ == "__main__":
