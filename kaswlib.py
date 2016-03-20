@@ -583,6 +583,22 @@ def myHostname():
 def getUsername():
     return pwd.getpwuid(os.getuid())[0]
 
+
+def CPUTemp():
+    if not sys.platform.startswith('linux'):
+        return 0
+    cpu_temp = "/sys/class/thermal/thermal_zone0/temp"
+    for line in open(cpu_temp):
+        return float(line) / 1000
+
+
+def CPUClock():
+    if not sys.platform.startswith('linux'):
+        return 0
+    cpu_freq = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
+    for line in open(cpu_freq):
+        return int(line)
+
 re_parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
 
 
@@ -727,6 +743,8 @@ def test3():
 
 
 if __name__ == "__main__":
-    test3()
+    print CPUClock()
+    print CPUTemp()
+    # test3()
     # for i in range(10) :
     #    print( getSerial() )
