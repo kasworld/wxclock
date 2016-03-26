@@ -12,18 +12,17 @@ import os.path
 import math
 import random
 import wx
-from time import strftime, localtime
+import datetime
 import calendar
+import time
 
 wx.InitAllImageHandlers()
 
-import time
 
-import sys
-import os.path
 srcdir = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.append(os.path.join(os.path.split(srcdir)[0], 'kaswlib'))
-from kaswxlib import *
+import kaswxlib
+import kaswlib
 
 
 def getHMSAngles(mst):
@@ -35,11 +34,11 @@ def getHMSAngles(mst):
     return lt[3] * 30.0 + lt[4] / 2.0 + lt[5] / 120.0, lt[4] * 6.0 + lt[5] / 10.0 + ms / 10, lt[5] * 6.0 + ms * 6
 
 
-class kclock(wx.Frame, FPSlogic):
+class kclock(wx.Frame, kaswxlib.FPSlogic):
 
     def doFPSlogic(self, thisframe):
         self.Refresh(False)
-        datetext = strftime("%Y-%m-%d %H:%M:%S", localtime())
+        datetext = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.SetTitle(datetext)
 
     def __init__(self, *args, **kwds):
@@ -148,7 +147,7 @@ class kclock(wx.Frame, FPSlogic):
         dc.SetFont(self.calfont)
         w, h = dc.GetTextExtent("00")
         calday = calendar.Calendar(6).monthdays2calendar(
-            localtime()[0], localtime()[1])
+            time.localtime()[0], time.localtime()[1])
         """[[(0, 0), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)], [(5, 0), (6, 1), (7, 2), (8, 3), (9, 4), (10, 5), (11, 6)], [(12, 0), (13, 1), (14, 2), (15, 3), (16, 4), (17, 5), (18, 6)], [(19, 0), (20, 1), (21, 2), (22, 3), (23, 4), (24, 5), (25, 6)], [(26, 0), (27, 1), (28, 2), (29, 3), (30, 4), (31, 5), (0, 6)]]"""
         wwy = 0
         for wwl in calday:
@@ -161,7 +160,7 @@ class kclock(wx.Frame, FPSlogic):
                         ccc = (False, True, True)
                     if wwx[1] == 6:
                         ccc = (True, False, False)
-                    if wwx[0] == localtime()[2]:
+                    if wwx[0] == time.localtime()[2]:
                         ccc = (False, True, False)
                     self._printText(dc, str(wwx[0]),
                                     wdposx + (posx - 3) * w * 1.5,
@@ -185,11 +184,13 @@ class kclock(wx.Frame, FPSlogic):
 
         wdposx, wdposy = self.getCenterPos(False)
         dc.SetFont(self.bigfont)
-        datetext = strftime("%H:%M:%S", localtime())
+        datetext = time.strftime("%H:%M:%S", time.localtime())
         self._printText(dc, datetext, wdposx, wdposy - self.adj * 5)
         dc.SetFont(self.calfont)
-        datetext = strftime("%Y-%m-%d", localtime())
-        self._printText(dc, datetext, wdposx, wdposy - self.adj * 1)
+        # datetext = strftime("%Y-%m-%d", localtime())
+        disptext = "{0:%Y-%m-%d} {1:5.1f}MHz {2}C".format(
+            datetime.datetime.now(), kaswlib.CPUClock() / 1000, kaswlib.CPUTemp())
+        self._printText(dc, disptext, wdposx, wdposy - self.adj * 1)
         self._drawCalendar(dc)
 
 if __name__ == "__main__":

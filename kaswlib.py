@@ -597,7 +597,7 @@ def CPUClock():
         return 0
     cpu_freq = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
     for line in open(cpu_freq):
-        return int(line)
+        return float(line)
 
 re_parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
 

@@ -38,7 +38,7 @@ import sys
 import os.path
 srcdir = os.path.dirname(os.path.abspath(sys.argv[0]))
 sys.path.append(os.path.join(os.path.split(srcdir)[0], 'kaswlib'))
-from kaswlib import *
+import kaswlib
 
 
 def loadBitmap2MemoryDCArray(bitmapfilename, xslicenum=1, yslicenum=1,
@@ -96,7 +96,7 @@ def makeRotatedImage(image, angle):
 
 
 def loadBitmap2RotatedMemoryDCArray(imagefilename, rangearg=(0, 360, 10),
-                                    reverse = False, addreverse = False):
+                                    reverse=False, addreverse=False):
     rtn = []
     fullimage = wx.Bitmap(imagefilename).ConvertToImage()
     for a in range(*rangearg):
@@ -151,7 +151,7 @@ class FPSlogic():
         self.timer = wx.Timer(self)
         self.repeatingcalldict = {}
         self.pause = False
-        self.statFPS = Statistics()
+        self.statFPS = kaswlib.Statistics()
         self.timer.Start(1000 / self.maxFPS, oneShot=True)
         self.frames = [time.time()]
         self.first = True
