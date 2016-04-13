@@ -67,6 +67,26 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self._recalcCoords(size)
         self._drawBox()
 
+    def _recalcCoords(self, size):
+        self.bgbitmap = wx.EmptyBitmap(*size.Get())
+        self.clientsize = self.GetClientSizeTuple()
+        self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
+        self.smallfont = wx.Font(self.adj / 4, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.calfont = wx.Font(self.adj / 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.bigfont = wx.Font(self.adj * 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.mcenterx = self.clientsize[0] / 2
+        self.mcentery = self.clientsize[1] / 2
+        self.maxlen = min(self.mcenterx, self.mcentery)
+        self.mcenterx = self.clientsize[0] - self.maxlen
+        self.mcentery = self.clientsize[1] - self.maxlen
+
+    def _drawBox(self):
+        """Draws clock face and tick marks onto the faceBitmap."""
+        pdc = wx.BufferedDC(None, self.bgbitmap)
+        pdc.SetBackground(wx.Brush("black", wx.SOLID))
+        pdc.Clear()
+        # self._drawCalendar(pdc)
+
     def OnMouse(self, evt):
         # if evt.LeftIsDown():
         #     self.Close()
@@ -95,18 +115,6 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         except:
             pass
         return rtnimg
-
-    def _recalcCoords(self, size):
-        self.bgbitmap = wx.EmptyBitmap(*size.Get())
-        self.clientsize = self.GetClientSizeTuple()
-        self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
-        self.calfont = wx.Font(self.adj / 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        self.bigfont = wx.Font(self.adj * 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        self.mcenterx = self.clientsize[0] / 2
-        self.mcentery = self.clientsize[1] / 2
-        self.maxlen = min(self.mcenterx, self.mcentery)
-        self.mcenterx = self.clientsize[0] - self.maxlen
-        self.mcentery = self.clientsize[1] - self.maxlen
 
     def _printText(self, dc, pstr, x, y, r=True, g=True, b=True, depth=2):
         w, h = dc.GetTextExtent(pstr)
@@ -170,13 +178,6 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
                                     *ccc)
                 posx += 1
             wwy += 1
-
-    def _drawBox(self):
-        """Draws clock face and tick marks onto the faceBitmap."""
-        pdc = wx.BufferedDC(None, self.bgbitmap)
-        pdc.SetBackground(wx.Brush("black", wx.SOLID))
-        pdc.Clear()
-        # self._drawCalendar(pdc)
 
     def _OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
