@@ -90,10 +90,14 @@ def makeCalendarImg(bx, by):
     dc.SetFont(calfont)
 
     w, h = dc.GetTextExtent("00")
+
+    disptext = "{0:%Y-%m-%d}".format(datetime.datetime.now())
+    drawTextRaw2DC(dc, disptext, bx / 3, h / 2)
+
     calday = calendar.Calendar(6).monthdays2calendar(
         time.localtime()[0], time.localtime()[1])
     """[[(0, 0), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)], [(5, 0), (6, 1), (7, 2), (8, 3), (9, 4), (10, 5), (11, 6)], [(12, 0), (13, 1), (14, 2), (15, 3), (16, 4), (17, 5), (18, 6)], [(19, 0), (20, 1), (21, 2), (22, 3), (23, 4), (24, 5), (25, 6)], [(26, 0), (27, 1), (28, 2), (29, 3), (30, 4), (31, 5), (0, 6)]]"""
-    wwy = 0.5
+    wwy = 1.4
     for wwl in calday:
         posx = 0.5
         for wwx in wwl:
@@ -249,7 +253,6 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.clientsize = self.GetClientSizeTuple()
         self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
         self.smallfont = wx.Font(self.adj / 4, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        self.calfont = wx.Font(self.adj / 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.bigfont = wx.Font(self.adj * 2, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.mcenterx = self.clientsize[0] / 2
         self.mcentery = self.clientsize[1] / 2
@@ -374,10 +377,6 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         disptext = "{0:5.1f}MHz {1:4.1f}C".format(
             self.CPUClock, self.CPUTemp)
         self._printText(dc, disptext, wdposx, wdposy - self.adj * 1.5)
-
-        dc.SetFont(self.calfont)
-        disptext = "{0:%Y-%m-%d}".format(datetime.datetime.now())
-        self._printText(dc, disptext, wdposx, wdposy - self.adj * 1)
 
         wdposx, wdposy = self.getCenterPos(False)
         dc.DrawBitmap(self.calBitMap, wdposx - self.Size[0] / 4, wdposy)
