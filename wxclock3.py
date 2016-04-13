@@ -34,28 +34,120 @@ def getHMSAngles(mst):
     return lt[3] * 30.0 + lt[4] / 2.0 + lt[5] / 120.0, lt[4] * 6.0 + lt[5] / 10.0 + ms / 10, lt[5] * 6.0 + ms * 6
 
 
+def getPoint2(cx, cy, r, angle, length):
+    rad = math.radians(angle + 270)
+    l = r * length
+    return cx + l * math.cos(rad), cy + l * math.sin(rad)
+
+
+def drawClockTicks2(dc, cx, cy, r, c1, c2=None):
+    tw = r / 150
+    td = max(tw / 2, 1)
+    if c2:
+        dc.SetPen(wx.Pen(c2, tw))
+        for a in range(0, 360):
+            # c = (255,255,255)
+            p1 = getPoint2(cx, cy, r, a, 1.0)
+            if a % 30 == 0:  # hour
+                p2 = getPoint2(cx, cy, r, a, 0.90)
+            elif a % 6 == 0:  # min & sec
+                p2 = getPoint2(cx, cy, r, a, 0.95)
+            else:  # 1 degree
+                p2 = getPoint2(cx, cy, r, a, 0.98)
+            dc.DrawLine(p1[0] + td, p1[1] + td, p2[0] + td, p2[1] + td)
+    dc.SetPen(wx.Pen(c1, tw))
+    for a in range(0, 360):
+        # c = (255,255,255)
+        p1 = getPoint2(cx, cy, r, a, 1.0)
+        if a % 30 == 0:  # hour
+            p2 = getPoint2(cx, cy, r, a, 0.90)
+        elif a % 6 == 0:  # min & sec
+            p2 = getPoint2(cx, cy, r, a, 0.95)
+        else:  # 1 degree
+            p2 = getPoint2(cx, cy, r, a, 0.98)
+        dc.DrawLine(p1[0], p1[1], p2[0], p2[1])
+
+
+def drawTextRaw2DC(dc, pstr, x, y, r=True, g=True, b=True, depth=2):
+    w, h = dc.GetTextExtent(pstr)
+    for i in range(0, depth):
+        cr = int(i * 255. / (depth - 1))
+        dc.SetTextForeground(
+            wx.Colour(cr if r else cr * .8, cr if g else cr * .8,
+                      cr if b else cr * .8, 0x80)
+        )
+        dc.DrawText(pstr,  x - w / 2 + depth - i,  y - h / 2 + depth - i)
+
+
+def makeCalendarImg(bx, by):
+    calBitMap = wx.EmptyBitmap(bx, by)
+    calfont = wx.Font(bx / 20, wx.SWISS, wx.NORMAL, wx.NORMAL)
+
+    dc = wx.MemoryDC()
+    dc.SelectObject(calBitMap)
+    dc.SetBackground(wx.Brush("black", wx.SOLID))
+    dc.Clear()
+    dc.SetFont(calfont)
+
+    w, h = dc.GetTextExtent("00")
+    calday = calendar.Calendar(6).monthdays2calendar(
+        time.localtime()[0], time.localtime()[1])
+    """[[(0, 0), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)], [(5, 0), (6, 1), (7, 2), (8, 3), (9, 4), (10, 5), (11, 6)], [(12, 0), (13, 1), (14, 2), (15, 3), (16, 4), (17, 5), (18, 6)], [(19, 0), (20, 1), (21, 2), (22, 3), (23, 4), (24, 5), (25, 6)], [(26, 0), (27, 1), (28, 2), (29, 3), (30, 4), (31, 5), (0, 6)]]"""
+    wwy = 0.5
+    for wwl in calday:
+        posx = 0.5
+        for wwx in wwl:
+            # pos is wd[1] , wwc
+            if (wwx[0]):
+                ccc = (True, True, True)
+                if wwx[1] == 5:
+                    ccc = (False, True, True)
+                if wwx[1] == 6:
+                    ccc = (True, False, False)
+                if wwx[0] == time.localtime()[2]:
+                    ccc = (False, True, False)
+                drawTextRaw2DC(dc, str(wwx[0]),
+                               posx * w * 1.5,
+                               wwy * h * 1.1,
+                               *ccc)
+            posx += 1
+        wwy += 1
+    dc.SelectObject(wx.NullBitmap)
+    return calBitMap
+
+
 class kclock(wx.Frame, kaswxlib.FPSlogic):
 
     def doFPSlogic(self, thisframe):
         self.Refresh(False)
+
+        thistime = time.localtime()
+        if self.LastTime[3] != thistime[3]:
+            self.doHourly()
+        if self.LastTime[4] != thistime[4]:
+            self.doMinutely()
+        if self.LastTime[5] != thistime[5]:
+            self.doSecondly()
+        self.LastTime = thistime
+
+    def doSecondly(self):
+        self.dampSensor()
         datetext = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.SetTitle(datetext)
 
-        self.sensorcount += 1
-        if self.sensorcount > 10:
-            self.dampSensor()
-            self.sensorcount = 0
-        #~ if time.time() - self.imageloadtime > 60 :
-        #~ self.loadbgimage()
-        #~ self._OnSize(None)
+    def doMinutely(self):
+        pass
+
+    def doHourly(self):
+        self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
 
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE  # | wx.STAY_ON_TOP
         wx.Frame.__init__(self, *args, **kwds)
         self.fps = 60
-        self.sensorcount = 0
         self.CPUClock = 0
         self.CPUTemp = 0
+        self.LastTime = time.localtime()
         self.isfullscreen = True
         self.ShowFullScreen(self.isfullscreen)
         self.rawbgimage = None
@@ -75,7 +167,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
     def dampSensor(self):
         if self.CPUClock == 0:
-            self.CPUClock = kaswlib.CPUClock()
+            self.CPUClock = kaswlib.CPUClock() / 1000
             self.CPUTemp = kaswlib.CPUTemp()
         else:
             self.CPUClock = (self.CPUClock +
@@ -148,11 +240,12 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         return rtnimg
 
     def _recalcCoords(self, size):
+        self.size = size
         if self.rawbgimage:
-            self.bgbitmap = self.resizefixaspect(
+            self.bgBitmap = self.resizefixaspect(
                 self.rawbgimage, size.width, size.height).ConvertToBitmap()
         else:
-            self.bgbitmap = wx.EmptyBitmap(*size.Get())
+            self.bgBitmap = wx.EmptyBitmap(*size.Get())
         self.clientsize = self.GetClientSizeTuple()
         self.adj = min(self.clientsize[0] / 10, self.clientsize[1] / 10)
         self.smallfont = wx.Font(self.adj / 4, wx.SWISS, wx.NORMAL, wx.NORMAL)
@@ -166,6 +259,8 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
             self.maxlen = min(self.mcenterx, self.mcentery)
         self.mcenterx = self.clientsize[0] - self.maxlen
         self.mcentery = self.clientsize[1] - self.maxlen
+
+        self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
 
     def _printText(self, dc, pstr, x, y, r=True, g=True, b=True, depth=2):
         w, h = dc.GetTextExtent(pstr)
@@ -201,76 +296,14 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
         return rtnx, rtny
 
-    def _drawCalendar(self, dc):
-        wdposx, wdposy = self.getCenterPos(False)
-        dc.SetFont(self.calfont)
-        w, h = dc.GetTextExtent("00")
-        calday = calendar.Calendar(6).monthdays2calendar(
-            time.localtime()[0], time.localtime()[1])
-        """[[(0, 0), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)], [(5, 0), (6, 1), (7, 2), (8, 3), (9, 4), (10, 5), (11, 6)], [(12, 0), (13, 1), (14, 2), (15, 3), (16, 4), (17, 5), (18, 6)], [(19, 0), (20, 1), (21, 2), (22, 3), (23, 4), (24, 5), (25, 6)], [(26, 0), (27, 1), (28, 2), (29, 3), (30, 4), (31, 5), (0, 6)]]"""
-        wwy = 0
-        for wwl in calday:
-            posx = 0
-            for wwx in wwl:
-                # pos is wd[1] , wwc
-                if (wwx[0]):
-                    ccc = (True, True, True)
-                    if wwx[1] == 5:
-                        ccc = (False, True, True)
-                    if wwx[1] == 6:
-                        ccc = (True, False, False)
-                    if wwx[0] == time.localtime()[2]:
-                        ccc = (False, True, False)
-                    self._printText(dc, str(wwx[0]),
-                                    wdposx + (posx - 3) * w * 1.5,
-                                    wdposy + wwy * h * 1.1,
-                                    # wdposy self.clientsize[1] - (5-wwy)*h*1.5
-                                    # ,
-                                    *ccc)
-                posx += 1
-            wwy += 1
-
     def _drawBox(self):
         """Draws clock face and tick marks onto the faceBitmap."""
-        pdc = wx.BufferedDC(None, self.bgbitmap)
+        pdc = wx.BufferedDC(None, self.bgBitmap)
         if not self.rawbgimage:
             pdc.SetBackground(wx.Brush("black", wx.SOLID))
             pdc.Clear()
         else:
-            pdc.DrawBitmap(self.bgbitmap, 0, 0)
-        # self._drawCalendar(pdc)
-
-    def getpoint2(self, cx, cy, r, angle, length):
-        rad = math.radians(angle + 270)
-        l = r * length
-        return cx + l * math.cos(rad), cy + l * math.sin(rad)
-
-    def _drawClockTicks2(self, dc, cx, cy, r, c1, c2=None):
-        tw = r / 150
-        td = max(tw / 2, 1)
-        if c2:
-            dc.SetPen(wx.Pen(c2, tw))
-            for a in range(0, 360):
-                # c = (255,255,255)
-                p1 = self.getpoint2(cx, cy, r, a, 1.0)
-                if a % 30 == 0:  # hour
-                    p2 = self.getpoint2(cx, cy, r, a, 0.90)
-                elif a % 6 == 0:  # min & sec
-                    p2 = self.getpoint2(cx, cy, r, a, 0.95)
-                else:  # 1 degree
-                    p2 = self.getpoint2(cx, cy, r, a, 0.98)
-                dc.DrawLine(p1[0] + td, p1[1] + td, p2[0] + td, p2[1] + td)
-        dc.SetPen(wx.Pen(c1, tw))
-        for a in range(0, 360):
-            # c = (255,255,255)
-            p1 = self.getpoint2(cx, cy, r, a, 1.0)
-            if a % 30 == 0:  # hour
-                p2 = self.getpoint2(cx, cy, r, a, 0.90)
-            elif a % 6 == 0:  # min & sec
-                p2 = self.getpoint2(cx, cy, r, a, 0.95)
-            else:  # 1 degree
-                p2 = self.getpoint2(cx, cy, r, a, 0.98)
-            dc.DrawLine(p1[0], p1[1], p2[0], p2[1])
+            pdc.DrawBitmap(self.bgBitmap, 0, 0)
 
     def _drawclockhands(self, dc, mst):
         wdposx, wdposy = self.getCenterPos(True)
@@ -286,35 +319,35 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
             hourlen, minlen, seclen = 0.6, 0.8, 1.0
 
             seccx, seccy = wdposx, wdposy  # self.mcentery
-            mincx, mincy = self.getpoint2(
+            mincx, mincy = getPoint2(
                 seccx, seccy, self.maxlen, secangle, 0.2)
-            hourcx, hourcy = self.getpoint2(
+            hourcx, hourcy = getPoint2(
                 mincx, mincy, self.maxlen, minangle, 0.2)
         else:
             hourlen, minlen, seclen = 1.0, 0.8, 0.6
 
             hourcx, hourcy = wdposx, wdposy  # self.mcentery
-            mincx, mincy = self.getpoint2(
+            mincx, mincy = getPoint2(
                 hourcx, hourcy, self.maxlen, hourangle, 0.2)
-            seccx, seccy = self.getpoint2(
+            seccx, seccy = getPoint2(
                 mincx, mincy, self.maxlen, minangle, 0.2)
 
-        hourpos = self.getpoint2(
+        hourpos = getPoint2(
             hourcx, hourcy, self.maxlen, hourangle, hourlen)
-        minpos = self.getpoint2(mincx, mincy, self.maxlen, minangle, minlen)
-        secpos = self.getpoint2(seccx, seccy, self.maxlen, secangle, seclen)
+        minpos = getPoint2(mincx, mincy, self.maxlen, minangle, minlen)
+        secpos = getPoint2(seccx, seccy, self.maxlen, secangle, seclen)
 
         dc.SetPen(wx.Pen(hourco, hw))
         dc.DrawLines(((hourcx, hourcy), hourpos))
-        self._drawClockTicks2(dc, hourcx, hourcy,
-                              self.maxlen * hourlen, hourco)  # , "black" )
+        drawClockTicks2(dc, hourcx, hourcy,
+                        self.maxlen * hourlen, hourco)  # , "black" )
 
         dc.SetBrush(wx.Brush(hourco, wx.SOLID))
         dc.DrawCircle(hourcx, hourcy, self.adj / 10)
 
         dc.SetPen(wx.Pen(minco, hw))
         dc.DrawLines(((mincx, mincy), minpos))
-        self._drawClockTicks2(
+        drawClockTicks2(
             dc, mincx, mincy, self.maxlen * minlen, minco)  # , "black" )
 
         dc.SetBrush(wx.Brush(minco, wx.SOLID))
@@ -322,21 +355,15 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
         dc.SetPen(wx.Pen(secco, hw))
         dc.DrawLines(((seccx, seccy), secpos))
-        self._drawClockTicks2(
+        drawClockTicks2(
             dc, seccx, seccy, self.maxlen * seclen, secco)  # , "black" )
 
         dc.SetBrush(wx.Brush(secco, wx.SOLID))
         dc.DrawCircle(seccx, seccy, self.adj / 10)
 
-    def _drawHands(self, dc):
-        self._drawclockhands(dc, time.time())
-
-    def drawInfos(self, dc):
-        pass
-
     def _OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
-        dc.DrawBitmap(self.bgbitmap, 0, 0)
+        dc.DrawBitmap(self.bgBitmap, 0, 0)
 
         wdposx, wdposy = self.getCenterPos(False)
         dc.SetFont(self.bigfont)
@@ -344,7 +371,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self._printText(dc, datetext, wdposx, wdposy - self.adj * 5)
 
         dc.SetFont(self.smallfont)
-        disptext = "{0:5.1f}MHz {1}C".format(
+        disptext = "{0:5.1f}MHz {1:4.1f}C".format(
             self.CPUClock, self.CPUTemp)
         self._printText(dc, disptext, wdposx, wdposy - self.adj * 1.5)
 
@@ -352,8 +379,11 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         disptext = "{0:%Y-%m-%d}".format(datetime.datetime.now())
         self._printText(dc, disptext, wdposx, wdposy - self.adj * 1)
 
-        self._drawCalendar(dc)
-        self._drawHands(dc)
+        wdposx, wdposy = self.getCenterPos(False)
+        dc.DrawBitmap(self.calBitMap, wdposx - self.Size[0] / 4, wdposy)
+
+        self._drawclockhands(dc, time.time())
+
 
 if __name__ == "__main__":
     app = wx.PySimpleApp(0)
