@@ -40,10 +40,17 @@ def getPoint2(cx, cy, r, angle, length):
     return cx + l * math.cos(rad), cy + l * math.sin(rad)
 
 
-def drawClockTicks2(dc, cx, cy, r, c1, c2=None):
+def drawClock1(dc, cx, cy, angle, maxlen, rate, c1, c2=None):
+
+    pos = getPoint2(cx, cy, maxlen, angle, rate)
+    dc.SetPen(wx.Pen(c1, maxlen / 100 * rate))
+    dc.DrawLines(((cx, cy), pos))
+
+    r = maxlen * rate
     tw = r / 150
-    td = max(tw / 2, 1)
+
     if c2:
+        td = max(tw / 2, 1)
         dc.SetPen(wx.Pen(c2, tw))
         for a in range(0, 360):
             # c = (255,255,255)
@@ -55,6 +62,7 @@ def drawClockTicks2(dc, cx, cy, r, c1, c2=None):
             else:  # 1 degree
                 p2 = getPoint2(cx, cy, r, a, 0.98)
             dc.DrawLine(p1[0] + td, p1[1] + td, p2[0] + td, p2[1] + td)
+
     dc.SetPen(wx.Pen(c1, tw))
     for a in range(0, 360):
         # c = (255,255,255)
@@ -66,6 +74,9 @@ def drawClockTicks2(dc, cx, cy, r, c1, c2=None):
         else:  # 1 degree
             p2 = getPoint2(cx, cy, r, a, 0.98)
         dc.DrawLine(p1[0], p1[1], p2[0], p2[1])
+
+    dc.SetBrush(wx.Brush(c1, wx.SOLID))
+    dc.DrawCircle(cx, cy, maxlen / 50)
 
 
 def drawTextRaw2DC(dc, pstr, x, y, r=True, g=True, b=True, depth=2):
@@ -135,7 +146,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.LastTime = thistime
 
     def doSecondly(self):
-        self.dampSensor()
+        self.getSensor()
         datetext = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.SetTitle(datetext)
 
@@ -152,11 +163,12 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.CPUClock = 0
         self.CPUTemp = 0
         self.LastTime = time.localtime()
+        self.showClock = True
         self.isfullscreen = True
         self.ShowFullScreen(self.isfullscreen)
         self.rawbgimage = None
-        self.getbgimagefilename()
-        self.loadbgimage()
+        self.getBGImageFilename()
+        self.loadBGImage()
 
         # Set event handlers.
         self.Bind(wx.EVT_SIZE, self._OnSize)
@@ -169,14 +181,9 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self._OnSize(None)
         self.FPSTimerInit(self.fps)
 
-    def dampSensor(self):
-        if self.CPUClock == 0:
-            self.CPUClock = kaswlib.CPUClock() / 1000
-            self.CPUTemp = kaswlib.CPUTemp()
-        else:
-            self.CPUClock = (self.CPUClock +
-                             kaswlib.CPUClock() / 1000) / 2
-            self.CPUTemp = (self.CPUTemp + kaswlib.CPUTemp()) / 2
+    def getSensor(self):
+        self.CPUClock = kaswlib.CPUClock() / 1000
+        self.CPUTemp = kaswlib.CPUTemp()
 
     def _OnSize(self, evt):
         size = self.GetClientSize()
@@ -186,9 +193,20 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self._recalcCoords(size)
         self._drawBox()
 
+    def _drawBox(self):
+        """Draws clock face and tick marks onto the faceBitmap."""
+        pdc = wx.BufferedDC(None, self.bgBitmap)
+        if not self.rawbgimage:
+            pdc.SetBackground(wx.Brush("black", wx.SOLID))
+            pdc.Clear()
+        else:
+            pdc.DrawBitmap(self.bgBitmap, 0, 0)
+
     def OnMouse(self, evt):
         if evt.LeftIsDown():
             self.Close()
+        if evt.MiddleIsDown():
+            self.showClock = not self.showClock
         if evt.RightDown():
             self.isfullscreen = not self.isfullscreen
             self.ShowFullScreen(self.isfullscreen)
@@ -198,7 +216,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.timer.Stop()
         del self.timer
 
-    def getbgimagefilename(self):
+    def getBGImageFilename(self):
         if len(sys.argv) == 2:
             imagebasedirname = sys.argv[1]
         else:
@@ -213,7 +231,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
             )
         random.shuffle(self.imagefilenames)
 
-    def loadbgimage(self):
+    def loadBGImage(self):
         self.imageloadtime = time.time()
         if self.imagefilenames:
             imagename = self.imagefilenames.pop()
@@ -226,7 +244,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         except:
             self.rawbgimage = None
 
-    def resizefixaspect(self, image, wx, wy):
+    def resizeFixAspect(self, image, wx, wy):
         oriw = image.GetWidth()
         orih = image.GetHeight()
         oriap = float(oriw) / orih
@@ -246,7 +264,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
     def _recalcCoords(self, size):
         self.size = size
         if self.rawbgimage:
-            self.bgBitmap = self.resizefixaspect(
+            self.bgBitmap = self.resizeFixAspect(
                 self.rawbgimage, size.width, size.height).ConvertToBitmap()
         else:
             self.bgBitmap = wx.EmptyBitmap(*size.Get())
@@ -299,18 +317,8 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
         return rtnx, rtny
 
-    def _drawBox(self):
-        """Draws clock face and tick marks onto the faceBitmap."""
-        pdc = wx.BufferedDC(None, self.bgBitmap)
-        if not self.rawbgimage:
-            pdc.SetBackground(wx.Brush("black", wx.SOLID))
-            pdc.Clear()
-        else:
-            pdc.DrawBitmap(self.bgBitmap, 0, 0)
-
-    def _drawclockhands(self, dc, mst):
+    def drawAnalogClock(self, dc, mst):
         wdposx, wdposy = self.getCenterPos(True)
-        hw = self.adj / 40
 
         hourangle, minangle, secangle = getHMSAngles(mst)
 
@@ -335,34 +343,14 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
             seccx, seccy = getPoint2(
                 mincx, mincy, self.maxlen, minangle, 0.2)
 
-        hourpos = getPoint2(
-            hourcx, hourcy, self.maxlen, hourangle, hourlen)
-        minpos = getPoint2(mincx, mincy, self.maxlen, minangle, minlen)
-        secpos = getPoint2(seccx, seccy, self.maxlen, secangle, seclen)
+        drawClock1(dc, hourcx, hourcy, hourangle,
+                   self.maxlen, hourlen, hourco)  # , "black" )
 
-        dc.SetPen(wx.Pen(hourco, hw))
-        dc.DrawLines(((hourcx, hourcy), hourpos))
-        drawClockTicks2(dc, hourcx, hourcy,
-                        self.maxlen * hourlen, hourco)  # , "black" )
+        drawClock1(dc, mincx, mincy, minangle,
+                   self.maxlen, minlen, minco)  # , "black" )
 
-        dc.SetBrush(wx.Brush(hourco, wx.SOLID))
-        dc.DrawCircle(hourcx, hourcy, self.adj / 10)
-
-        dc.SetPen(wx.Pen(minco, hw))
-        dc.DrawLines(((mincx, mincy), minpos))
-        drawClockTicks2(
-            dc, mincx, mincy, self.maxlen * minlen, minco)  # , "black" )
-
-        dc.SetBrush(wx.Brush(minco, wx.SOLID))
-        dc.DrawCircle(mincx, mincy, self.adj / 10)
-
-        dc.SetPen(wx.Pen(secco, hw))
-        dc.DrawLines(((seccx, seccy), secpos))
-        drawClockTicks2(
-            dc, seccx, seccy, self.maxlen * seclen, secco)  # , "black" )
-
-        dc.SetBrush(wx.Brush(secco, wx.SOLID))
-        dc.DrawCircle(seccx, seccy, self.adj / 10)
+        drawClock1(dc, seccx, seccy, secangle,
+                   self.maxlen, seclen, secco)  # , "black" )
 
     def _OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
@@ -381,7 +369,8 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         wdposx, wdposy = self.getCenterPos(False)
         dc.DrawBitmap(self.calBitMap, wdposx - self.Size[0] / 4, wdposy)
 
-        self._drawclockhands(dc, time.time())
+        if self.showClock:
+            self.drawAnalogClock(dc, time.time())
 
 
 if __name__ == "__main__":
