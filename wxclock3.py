@@ -100,7 +100,7 @@ def makeCalendarImg(bx, by):
     dc.Clear()
     dc.SetFont(calfont)
 
-    #w, h = dc.GetTextExtent("00")
+    # w, h = dc.GetTextExtent("00")
     w = bx / 7
     h = by / 7
 
@@ -110,7 +110,7 @@ def makeCalendarImg(bx, by):
     calday = calendar.Calendar(6).monthdays2calendar(
         time.localtime()[0], time.localtime()[1])
     """[[(0, 0), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)], [(5, 0), (6, 1), (7, 2), (8, 3), (9, 4), (10, 5), (11, 6)], [(12, 0), (13, 1), (14, 2), (15, 3), (16, 4), (17, 5), (18, 6)], [(19, 0), (20, 1), (21, 2), (22, 3), (23, 4), (24, 5), (25, 6)], [(26, 0), (27, 1), (28, 2), (29, 3), (30, 4), (31, 5), (0, 6)]]"""
-    wwy = 1
+    wwy = 1.5
     for wwl in calday:
         posx = 0.5
         for wwx in wwl:
@@ -141,7 +141,7 @@ def makeDigiClockImg(bx, by):
     dc.SetBackground(wx.Brush("black", wx.SOLID))
     dc.Clear()
 
-    bigfont = wx.Font(min(bx / 6, by / 3), wx.SWISS, wx.NORMAL, wx.NORMAL)
+    bigfont = wx.Font(min(bx / 6, by / 4), wx.SWISS, wx.NORMAL, wx.NORMAL)
     dc.SetFont(bigfont)
     datetext = time.strftime("%H:%M:%S", time.localtime())
     drawTextRaw2DC(dc, datetext, bx / 2, by / 4)
@@ -150,7 +150,7 @@ def makeDigiClockImg(bx, by):
     dc.SetFont(smallfont)
     disptext = "{0:5.1f}MHz {1:4.1f}C".format(
         kaswlib.CPUClock() / 1000, kaswlib.CPUTemp())
-    drawTextRaw2DC(dc, disptext, bx / 2, by / 4 * 3)
+    drawTextRaw2DC(dc, disptext, bx / 2, by / 2)
 
     dc.SelectObject(wx.NullBitmap)
     return bitMap
@@ -227,12 +227,22 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         if size.x < 1 or size.y < 1:
             return
 
-        self._recalcCoords(size)
         self.digiClockBitMap = makeDigiClockImg(
             self.Size[0] / 2, self.Size[1] / 2)
-        self.drawBGImage()
 
-    def drawBGImage(self):
+        if self.rawbgimage:
+            self.bgBitmap = self.rawbgimage.Scale(
+                size.width, size.height).ConvertToBitmap()
+        else:
+            self.bgBitmap = wx.EmptyBitmap(*size.Get())
+
+        self.clientSize = self.GetClientSizeTuple()
+        mcenterx = self.clientSize[0] / 2
+        mcentery = self.clientSize[1] / 2
+        self.maxLen = min(mcenterx, mcentery)
+
+        self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
+
         pdc = wx.BufferedDC(None, self.bgBitmap)
         if not self.rawbgimage:
             pdc.SetBackground(wx.Brush("black", wx.SOLID))
@@ -258,7 +268,6 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.imageloadtime = time.time()
         if self.imagefilenames:
             imagename = self.imagefilenames.pop()
-        nulog = wx.LogNull()
         try:
             f = open(imagename, "rb")
             f.close()
@@ -267,62 +276,26 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         except:
             self.rawbgimage = None
 
-    def resizeFixAspect(self, image, wx, wy):
-        oriw = image.GetWidth()
-        orih = image.GetHeight()
-        oriap = float(oriw) / orih
-        targetap = float(wx) / wy
-        if oriap < targetap:  # ori is wider
-            scalerate = float(wy) / orih
-        else:
-            scalerate = float(wx) / oriw
-        rtnimg = None
-        try:
-            rtnimg = image.Scale(oriw * scalerate, orih * scalerate).Size(
-                (wx, wy), ((wx - oriw * scalerate) / 2, (wy - orih * scalerate) / 2))
-        except:
-            pass
-        return rtnimg
-
-    def _recalcCoords(self, size):
-        self.size = size
-        if self.rawbgimage:
-            self.bgBitmap = self.resizeFixAspect(
-                self.rawbgimage, size.width, size.height).ConvertToBitmap()
-        else:
-            self.bgBitmap = wx.EmptyBitmap(*size.Get())
-        self.clientsize = self.GetClientSizeTuple()
-        self.mcenterx = self.clientsize[0] / 2
-        self.mcentery = self.clientsize[1] / 2
-        if self.rawbgimage:
-            self.maxlen = min(self.mcenterx, self.mcentery) / 2
-        else:
-            self.maxlen = min(self.mcenterx, self.mcentery)
-        self.mcenterx = self.clientsize[0] - self.maxlen
-        self.mcentery = self.clientsize[1] - self.maxlen
-
-        self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
-
     def getCenterPos(self, even=True):
         mst = time.time()
         lt = time.localtime(mst)
         ms = int((mst - int(mst)) * 1000)
 
-        centerlen = self.maxlen + \
-            (self.clientsize[0] - self.maxlen * 2) * \
+        centerlen = self.maxLen + \
+            (self.clientSize[0] - self.maxLen * 2) * \
             (lt.tm_sec * 100 + ms / 10.0) / 6000.0
         if lt.tm_min % 2:
-            rtnx = self.clientsize[0] - centerlen if even else centerlen
+            rtnx = self.clientSize[0] - centerlen if even else centerlen
         else:
-            rtnx = centerlen if even else self.clientsize[0] - centerlen
+            rtnx = centerlen if even else self.clientSize[0] - centerlen
 
-        centerlen = self.maxlen + \
-            (self.clientsize[1] - self.maxlen * 2) * \
+        centerlen = self.maxLen + \
+            (self.clientSize[1] - self.maxLen * 2) * \
             (lt.tm_sec * 100 + ms / 10.0) / 6000.0
         if lt.tm_min % 2:
-            rtny = self.clientsize[1] - centerlen if even else centerlen
+            rtny = self.clientSize[1] - centerlen if even else centerlen
         else:
-            rtny = centerlen if even else self.clientsize[1] - centerlen
+            rtny = centerlen if even else self.clientSize[1] - centerlen
 
         return rtnx, rtny
 
@@ -338,28 +311,28 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         if True:
             hourlen, minlen, seclen = 0.6, 0.8, 1.0
 
-            seccx, seccy = wdposx, wdposy  # self.mcentery
+            seccx, seccy = wdposx, wdposy
             mincx, mincy = getPoint2(
-                seccx, seccy, self.maxlen, secangle, 0.2)
+                seccx, seccy, self.maxLen, secangle, 0.2)
             hourcx, hourcy = getPoint2(
-                mincx, mincy, self.maxlen, minangle, 0.2)
+                mincx, mincy, self.maxLen, minangle, 0.2)
         else:
             hourlen, minlen, seclen = 1.0, 0.8, 0.6
 
-            hourcx, hourcy = wdposx, wdposy  # self.mcentery
+            hourcx, hourcy = wdposx, wdposy
             mincx, mincy = getPoint2(
-                hourcx, hourcy, self.maxlen, hourangle, 0.2)
+                hourcx, hourcy, self.maxLen, hourangle, 0.2)
             seccx, seccy = getPoint2(
-                mincx, mincy, self.maxlen, minangle, 0.2)
+                mincx, mincy, self.maxLen, minangle, 0.2)
 
         drawClock1(dc, hourcx, hourcy, hourangle,
-                   self.maxlen, hourlen, hourco)  # , "black" )
+                   self.maxLen, hourlen, hourco)  # , "black" )
 
         drawClock1(dc, mincx, mincy, minangle,
-                   self.maxlen, minlen, minco)  # , "black" )
+                   self.maxLen, minlen, minco)  # , "black" )
 
         drawClock1(dc, seccx, seccy, secangle,
-                   self.maxlen, seclen, secco)  # , "black" )
+                   self.maxLen, seclen, secco)  # , "black" )
 
     def _OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
