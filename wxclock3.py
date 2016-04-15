@@ -202,7 +202,6 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE  # | wx.STAY_ON_TOP
         wx.Frame.__init__(self, *args, **kwds)
-        self.fps = 60
         self.LastTime = time.localtime()
         self.showClock = True
         self.isfullscreen = True
@@ -220,28 +219,24 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
 
         self._OnSize(None)
-        self.FPSTimerInit(self.fps)
+        self.FPSTimerInit(60)
 
     def _OnSize(self, evt):
-        size = self.GetClientSize()
-        if size.x < 1 or size.y < 1:
+        if self.Size[0] < 1 or self.Size[1] < 1:
             return
 
         self.digiClockBitMap = makeDigiClockImg(
             self.Size[0] / 2, self.Size[1] / 2)
 
+        self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
+
         if self.rawbgimage:
             self.bgBitmap = self.rawbgimage.Scale(
-                size.width, size.height).ConvertToBitmap()
+                self.Size[0], self.Size[1]).ConvertToBitmap()
         else:
-            self.bgBitmap = wx.EmptyBitmap(*size.Get())
+            self.bgBitmap = wx.EmptyBitmap(*self.Size)
 
-        self.clientSize = self.GetClientSizeTuple()
-        mcenterx = self.clientSize[0] / 2
-        mcentery = self.clientSize[1] / 2
-        self.maxLen = min(mcenterx, mcentery)
-
-        self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
+        self.maxLen = min(self.Size[0], self.Size[1]) / 2
 
         pdc = wx.BufferedDC(None, self.bgBitmap)
         if not self.rawbgimage:
@@ -282,20 +277,20 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         ms = int((mst - int(mst)) * 1000)
 
         centerlen = self.maxLen + \
-            (self.clientSize[0] - self.maxLen * 2) * \
+            (self.Size[0] - self.maxLen * 2) * \
             (lt.tm_sec * 100 + ms / 10.0) / 6000.0
         if lt.tm_min % 2:
-            rtnx = self.clientSize[0] - centerlen if even else centerlen
+            rtnx = self.Size[0] - centerlen if even else centerlen
         else:
-            rtnx = centerlen if even else self.clientSize[0] - centerlen
+            rtnx = centerlen if even else self.Size[0] - centerlen
 
         centerlen = self.maxLen + \
-            (self.clientSize[1] - self.maxLen * 2) * \
+            (self.Size[1] - self.maxLen * 2) * \
             (lt.tm_sec * 100 + ms / 10.0) / 6000.0
         if lt.tm_min % 2:
-            rtny = self.clientSize[1] - centerlen if even else centerlen
+            rtny = self.Size[1] - centerlen if even else centerlen
         else:
-            rtny = centerlen if even else self.clientSize[1] - centerlen
+            rtny = centerlen if even else self.Size[1] - centerlen
 
         return rtnx, rtny
 
