@@ -80,6 +80,7 @@ def drawClock1(dc, cx, cy, angle, maxlen, rate, c1, c2=None):
 
 
 def drawTextRaw2DC(dc, pstr, x, y, r=True, g=True, b=True, depth=2):
+    depth = max(2, depth)
     w, h = dc.GetTextExtent(pstr)
     for i in range(0, depth):
         cr = int(i * 255. / (depth - 1))
@@ -103,9 +104,10 @@ def makeCalendarImg(bx, by):
     # w, h = dc.GetTextExtent("00")
     w = bx / 7
     h = by / 7
+    depth = min(bx, by) / 100
 
     disptext = "{0:%Y-%m-%d}".format(datetime.datetime.now())
-    drawTextRaw2DC(dc, disptext, bx / 3, h / 2)
+    drawTextRaw2DC(dc, disptext, bx / 3, h / 2, depth=depth)
 
     calday = calendar.Calendar(6).monthdays2calendar(
         time.localtime()[0], time.localtime()[1])
@@ -126,31 +128,33 @@ def makeCalendarImg(bx, by):
                 drawTextRaw2DC(dc, str(wwx[0]),
                                posx * w,
                                wwy * h,
-                               *ccc)
+                               *ccc, depth=depth)
             posx += 1
         wwy += 1
     dc.SelectObject(wx.NullBitmap)
     return bitMap
 
 
-def makeDigiClockImg(bx, by):
+def makeDigiClockImg(bx, by, smallFont, bigFont):
+    # bigfont = wx.Font(min(bx / 6, by / 4), wx.SWISS, wx.NORMAL, wx.NORMAL)
+    # smallfont = wx.Font(min(bx / 32, by / 20), wx.SWISS, wx.NORMAL, wx.NORMAL)
+
     bitMap = wx.EmptyBitmap(bx, by)
+    depth = min(bx, by) / 50
 
     dc = wx.MemoryDC()
     dc.SelectObject(bitMap)
     dc.SetBackground(wx.Brush("black", wx.SOLID))
     dc.Clear()
 
-    bigfont = wx.Font(min(bx / 6, by / 4), wx.SWISS, wx.NORMAL, wx.NORMAL)
-    dc.SetFont(bigfont)
+    dc.SetFont(bigFont)
     datetext = time.strftime("%H:%M:%S", time.localtime())
-    drawTextRaw2DC(dc, datetext, bx / 2, by / 4)
+    drawTextRaw2DC(dc, datetext, bx / 2, by / 4, depth=depth)
 
-    smallfont = wx.Font(min(bx / 32, by / 20), wx.SWISS, wx.NORMAL, wx.NORMAL)
-    dc.SetFont(smallfont)
+    dc.SetFont(smallFont)
     disptext = "{0:5.1f}MHz {1:4.1f}C".format(
         kaswlib.CPUClock() / 1000, kaswlib.CPUTemp())
-    drawTextRaw2DC(dc, disptext, bx / 2, by / 2)
+    drawTextRaw2DC(dc, disptext, bx / 2, by / 2, depth=depth / 4)
 
     dc.SelectObject(wx.NullBitmap)
     return bitMap
@@ -179,19 +183,19 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.Refresh(False)
 
         thistime = time.localtime()
-        if self.LastTime[3] != thistime[3]:
+        if self.lastTime[3] != thistime[3]:
             self.doHourly()
-        if self.LastTime[4] != thistime[4]:
+        if self.lastTime[4] != thistime[4]:
             self.doMinutely()
-        if self.LastTime[5] != thistime[5]:
+        if self.lastTime[5] != thistime[5]:
             self.doSecondly()
-        self.LastTime = thistime
+        self.lastTime = thistime
 
     def doSecondly(self):
         datetext = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.SetTitle(datetext)
         self.digiClockBitMap = makeDigiClockImg(
-            self.Size[0] / 2, self.Size[1] / 2)
+            self.Size[0] / 2, self.Size[1] / 2, self.smallFont, self.bigFont)
 
     def doMinutely(self):
         pass
@@ -202,12 +206,12 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE  # | wx.STAY_ON_TOP
         wx.Frame.__init__(self, *args, **kwds)
-        self.LastTime = time.localtime()
+        self.lastTime = time.localtime()
         self.showClock = True
-        self.isfullscreen = True
-        self.ShowFullScreen(self.isfullscreen)
-        self.rawbgimage = None
-        self.imagefilenames = getBGImageFilename()
+        self.isFullscreen = True
+        self.ShowFullScreen(self.isFullscreen)
+        self.rawBGImage = None
+        self.imageFileNames = getBGImageFilename()
         self.loadBGImage()
 
         # Set event handlers.
@@ -225,13 +229,19 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         if self.Size[0] < 1 or self.Size[1] < 1:
             return
 
+        bx, by = self.Size[0] / 2, self.Size[1] / 2
+        self.bigFont = wx.Font(min(bx / 6, by / 3),
+                               wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.smallFont = wx.Font(
+            min(bx / 32, by / 20), wx.SWISS, wx.NORMAL, wx.NORMAL)
+
         self.digiClockBitMap = makeDigiClockImg(
-            self.Size[0] / 2, self.Size[1] / 2)
+            bx, by, self.smallFont, self.bigFont)
 
         self.calBitMap = makeCalendarImg(self.Size[0] / 2, self.Size[1] / 2)
 
-        if self.rawbgimage:
-            self.bgBitmap = self.rawbgimage.Scale(
+        if self.rawBGImage:
+            self.bgBitmap = self.rawBGImage.Scale(
                 self.Size[0], self.Size[1]).ConvertToBitmap()
         else:
             self.bgBitmap = wx.EmptyBitmap(*self.Size)
@@ -239,7 +249,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.maxLen = min(self.Size[0], self.Size[1]) / 2
 
         pdc = wx.BufferedDC(None, self.bgBitmap)
-        if not self.rawbgimage:
+        if not self.rawBGImage:
             pdc.SetBackground(wx.Brush("black", wx.SOLID))
             pdc.Clear()
         else:
@@ -251,8 +261,8 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         if evt.MiddleIsDown():
             self.showClock = not self.showClock
         if evt.RightDown():
-            self.isfullscreen = not self.isfullscreen
-            self.ShowFullScreen(self.isfullscreen)
+            self.isFullscreen = not self.isFullscreen
+            self.ShowFullScreen(self.isFullscreen)
             self._OnSize(None)
 
     def _OnDestroyWindow(self, evt):
@@ -261,15 +271,15 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
     def loadBGImage(self):
         self.imageloadtime = time.time()
-        if self.imagefilenames:
-            imagename = self.imagefilenames.pop()
+        if self.imageFileNames:
+            imagename = self.imageFileNames.pop()
         try:
             f = open(imagename, "rb")
             f.close()
-            self.rawbgimage = wx.Image(imagename)
-            self.imagefilenames.insert(0, imagename)
+            self.rawBGImage = wx.Image(imagename)
+            self.imageFileNames.insert(0, imagename)
         except:
-            self.rawbgimage = None
+            self.rawBGImage = None
 
     def getCenterPos(self, even=True):
         mst = time.time()
