@@ -93,7 +93,8 @@ def drawTextRaw2DC(dc, pstr, x, y, r=True, g=True, b=True, depth=2):
 
 def makeCalendarImg(bx, by):
     bitMap = wx.EmptyBitmap(bx, by)
-    calfont = wx.Font(min(bx / 16, by / 10), wx.SWISS, wx.NORMAL, wx.NORMAL)
+    calfont = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
+    calfont.SetPixelSize(wx.Size(bx / 12.0, by / 6.5))
 
     dc = wx.MemoryDC()
     dc.SelectObject(bitMap)
@@ -136,9 +137,6 @@ def makeCalendarImg(bx, by):
 
 
 def makeDigiClockImg(bx, by, smallFont, bigFont):
-    # bigfont = wx.Font(min(bx / 6, by / 4), wx.SWISS, wx.NORMAL, wx.NORMAL)
-    # smallfont = wx.Font(min(bx / 32, by / 20), wx.SWISS, wx.NORMAL, wx.NORMAL)
-
     bitMap = wx.EmptyBitmap(bx, by)
     depth = min(bx, by) / 50
 
@@ -230,10 +228,11 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
             return
 
         bx, by = self.Size[0] / 2, self.Size[1] / 2
-        self.bigFont = wx.Font(min(bx / 6, by / 3),
-                               wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.bigFont = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
+        self.bigFont.SetPixelSize(wx.Size(bx / 6.0, by / 1.5))
         self.smallFont = wx.Font(
-            min(bx / 32, by / 20), wx.SWISS, wx.NORMAL, wx.NORMAL)
+            10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
+        self.smallFont.SetPixelSize(wx.Size(bx / 24.0, by / 6.0))
 
         self.digiClockBitMap = makeDigiClockImg(
             bx, by, self.smallFont, self.bigFont)
