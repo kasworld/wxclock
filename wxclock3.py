@@ -351,8 +351,9 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
 
 if __name__ == "__main__":
-    app = wx.PySimpleApp(0)
-    wx.InitAllImageHandlers()
+    # app = wx.PySimpleApp(0)
+    app = wx.App(False)
+    # wx.InitAllImageHandlers()
     frame_1 = kclock(None, -1, size=(640, 480))
     app.SetTopWindow(frame_1)
     frame_1.Show()
