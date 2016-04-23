@@ -79,6 +79,40 @@ def drawClock1(dc, cx, cy, angle, maxlen, rate, c1, c2=None):
     dc.DrawCircle(cx, cy, maxlen / 50)
 
 
+def drawAnalogClock(dc, wdposx, wdposy, maxLen, mst):
+    hourangle, minangle, secangle = getHMSAngles(mst)
+
+    hourco = wx.Colour(0xff, 0x40, 0x40)
+    minco = wx.Colour(0, 0xc0, 0)
+    secco = wx.Colour(0x40, 0x40, 0xff)
+
+    if True:
+        hourlen, minlen, seclen = 0.6, 0.8, 1.0
+
+        seccx, seccy = wdposx, wdposy
+        mincx, mincy = getPoint2(
+            seccx, seccy, maxLen, secangle, 0.2)
+        hourcx, hourcy = getPoint2(
+            mincx, mincy, maxLen, minangle, 0.2)
+    else:
+        hourlen, minlen, seclen = 1.0, 0.8, 0.6
+
+        hourcx, hourcy = wdposx, wdposy
+        mincx, mincy = getPoint2(
+            hourcx, hourcy, maxLen, hourangle, 0.2)
+        seccx, seccy = getPoint2(
+            mincx, mincy, maxLen, minangle, 0.2)
+
+    drawClock1(dc, hourcx, hourcy, hourangle,
+               maxLen, hourlen, hourco)  # , "black" )
+
+    drawClock1(dc, mincx, mincy, minangle,
+               maxLen, minlen, minco)  # , "black" )
+
+    drawClock1(dc, seccx, seccy, secangle,
+               maxLen, seclen, secco)  # , "black" )
+
+
 def drawTextRaw2DC(dc, pstr, x, y, r=True, g=True, b=True, depth=2):
     depth = max(2, depth)
     w, h = dc.GetTextExtent(pstr)
@@ -136,9 +170,18 @@ def makeCalendarImg(bx, by):
     return bitMap
 
 
+def makeDigiClockFont(bx, by):
+    bigFont = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
+    bigFont.SetPixelSize(wx.Size(bx / 6.0, by / 2.0))
+    smallFont = wx.Font(
+        10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
+    smallFont.SetPixelSize(wx.Size(bx / 24.0, by / 12.0))
+    return smallFont, bigFont
+
+
 def makeDigiClockImg(bx, by, smallFont, bigFont):
-    bitMap = wx.EmptyBitmap(bx, by)
-    depth = min(bx, by) / 50
+    bitMap = wx.EmptyBitmap(bx, by / 2)
+    depth = min(bx, by / 2) / 50
 
     dc = wx.MemoryDC()
     dc.SelectObject(bitMap)
@@ -147,12 +190,14 @@ def makeDigiClockImg(bx, by, smallFont, bigFont):
 
     dc.SetFont(bigFont)
     datetext = time.strftime("%H:%M:%S", time.localtime())
-    drawTextRaw2DC(dc, datetext, bx / 2, by / 4, depth=depth)
+    bfx, bfy = dc.GetTextExtent(datetext)
+    drawTextRaw2DC(dc, datetext, bx / 2, bfy / 2, depth=depth)
 
     dc.SetFont(smallFont)
     disptext = "{0:5.1f}MHz {1:4.1f}C".format(
         kaswlib.CPUClock() / 1000, kaswlib.CPUTemp())
-    drawTextRaw2DC(dc, disptext, bx / 2, by / 2, depth=depth / 4)
+    sfx, sfy = dc.GetTextExtent(disptext)
+    drawTextRaw2DC(dc, disptext, bx / 2, by / 2 - sfy, depth=depth / 4)
 
     dc.SelectObject(wx.NullBitmap)
     return bitMap
@@ -193,7 +238,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         datetext = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.SetTitle(datetext)
         self.digiClockBitMap = makeDigiClockImg(
-            self.Size[0] / 2, self.Size[1] / 2, self.smallFont, self.bigFont)
+            self.Size[0], self.Size[1], self.smallFont, self.bigFont)
 
     def doMinutely(self):
         pass
@@ -227,13 +272,8 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         if self.Size[0] < 1 or self.Size[1] < 1:
             return
 
-        bx, by = self.Size[0] / 2, self.Size[1] / 2
-        self.bigFont = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
-        self.bigFont.SetPixelSize(wx.Size(bx / 6.0, by / 1.5))
-        self.smallFont = wx.Font(
-            10, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL)
-        self.smallFont.SetPixelSize(wx.Size(bx / 24.0, by / 6.0))
-
+        bx, by = self.Size[0] / 1.5, self.Size[1]
+        self.smallFont, self.bigFont = makeDigiClockFont(bx, by)
         self.digiClockBitMap = makeDigiClockImg(
             bx, by, self.smallFont, self.bigFont)
 
@@ -305,45 +345,14 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
     def drawAnalogClock(self, dc, mst):
         wdposx, wdposy = self.getCenterPos(True)
-
-        hourangle, minangle, secangle = getHMSAngles(mst)
-
-        hourco = wx.Colour(0xff, 0x40, 0x40)
-        minco = wx.Colour(0, 0xc0, 0)
-        secco = wx.Colour(0x40, 0x40, 0xff)
-
-        if True:
-            hourlen, minlen, seclen = 0.6, 0.8, 1.0
-
-            seccx, seccy = wdposx, wdposy
-            mincx, mincy = getPoint2(
-                seccx, seccy, self.maxLen, secangle, 0.2)
-            hourcx, hourcy = getPoint2(
-                mincx, mincy, self.maxLen, minangle, 0.2)
-        else:
-            hourlen, minlen, seclen = 1.0, 0.8, 0.6
-
-            hourcx, hourcy = wdposx, wdposy
-            mincx, mincy = getPoint2(
-                hourcx, hourcy, self.maxLen, hourangle, 0.2)
-            seccx, seccy = getPoint2(
-                mincx, mincy, self.maxLen, minangle, 0.2)
-
-        drawClock1(dc, hourcx, hourcy, hourangle,
-                   self.maxLen, hourlen, hourco)  # , "black" )
-
-        drawClock1(dc, mincx, mincy, minangle,
-                   self.maxLen, minlen, minco)  # , "black" )
-
-        drawClock1(dc, seccx, seccy, secangle,
-                   self.maxLen, seclen, secco)  # , "black" )
+        drawAnalogClock(dc, wdposx, wdposy, self.maxLen, mst)
 
     def _OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
         dc.DrawBitmap(self.bgBitmap, 0, 0)
 
         wdposx, wdposy = self.getCenterPos(False)
-        dc.DrawBitmap(self.digiClockBitMap, wdposx - self.Size[0] / 4, 0)
+        dc.DrawBitmap(self.digiClockBitMap, wdposx - self.Size[0] / 2, 0)
         dc.DrawBitmap(self.calBitMap, wdposx - self.Size[0] / 4, wdposy)
 
         if self.showClock:
