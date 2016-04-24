@@ -272,7 +272,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         if self.Size[0] < 1 or self.Size[1] < 1:
             return
 
-        bx, by = self.Size[0] / 1.5, self.Size[1]
+        bx, by = self.Size[0], self.Size[1]
         self.smallFont, self.bigFont = makeDigiClockFont(bx, by)
         self.digiClockBitMap = makeDigiClockImg(
             bx, by, self.smallFont, self.bigFont)
@@ -352,8 +352,13 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         dc.DrawBitmap(self.bgBitmap, 0, 0)
 
         wdposx, wdposy = self.getCenterPos(False)
-        dc.DrawBitmap(self.digiClockBitMap, wdposx - self.Size[0] / 2, 0)
-        dc.DrawBitmap(self.calBitMap, wdposx - self.Size[0] / 4, wdposy)
+        if datetime.datetime.now().minute % 2 == 0:
+            dc.DrawBitmap(self.digiClockBitMap, 0, 0)
+            dc.DrawBitmap(self.calBitMap, wdposx -
+                          self.Size[0] / 4, self.Size[1] / 2)
+        else:
+            dc.DrawBitmap(self.digiClockBitMap, 0, self.Size[1] / 2)
+            dc.DrawBitmap(self.calBitMap, wdposx - self.Size[0] / 4, 0)
 
         if self.showClock:
             self.drawAnalogClock(dc, time.time())
