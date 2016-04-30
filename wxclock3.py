@@ -249,9 +249,16 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE  # | wx.STAY_ON_TOP
         wx.Frame.__init__(self, *args, **kwds)
-        self.lastTime = time.localtime()
+
         self.showClock = True
         self.isFullscreen = True
+        for i in sys.argv:
+            if i == "-f":
+                self.isFullscreen = not self.isFullscreen
+            if i == "-a":
+                self.showClock = not self.showClock
+
+        self.lastTime = time.localtime()
         self.ShowFullScreen(self.isFullscreen)
         self.rawBGImage = None
         self.imageFileNames = getBGImageFilename()
