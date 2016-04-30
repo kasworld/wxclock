@@ -15,6 +15,7 @@ import wx
 import calendar
 import time
 import datetime
+import string
 
 wx.InitAllImageHandlers()
 
@@ -252,11 +253,16 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
 
         self.showClock = True
         self.isFullscreen = True
-        for i in sys.argv:
+        self.fps = 60
+        for i in sys.argv[1:]:
             if i == "-f":
                 self.isFullscreen = not self.isFullscreen
-            if i == "-a":
+            elif i == "-a":
                 self.showClock = not self.showClock
+            else:
+                n = int(i)
+                if n > 0:
+                    self.fps = n
 
         self.lastTime = time.localtime()
         self.ShowFullScreen(self.isFullscreen)
@@ -273,7 +279,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
 
         self._OnSize(None)
-        self.FPSTimerInit(60)
+        self.FPSTimerInit(self.fps)
 
     def _OnSize(self, evt):
         if self.Size[0] < 1 or self.Size[1] < 1:
