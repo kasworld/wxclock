@@ -240,11 +240,11 @@ class Statistics(object):
 
     def __init__(self, timeFn=None):
         self.datadict = {
-            'min': None,
-            'max': None,
-            'avg': None,
+            'min': 0,
+            'max': 0,
+            'avg': 0,
             'sum': 0,
-            'last': None,
+            'last': 0,
             'count': 0,
         }
         self.formatstr = '%(last)s(%(min)s~%(max)s), %(avg)s=%(sum)s/%(count)d'
