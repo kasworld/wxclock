@@ -224,7 +224,7 @@ def getBGImageFilename():
 class kclock(wx.Frame, kaswxlib.FPSlogic):
 
     def doFPSlogic(self, thisframe):
-        self.Refresh(False)
+        # self.Refresh(False)
 
         thistime = time.localtime()
         if self.lastTime[3] != thistime[3]:
@@ -235,6 +235,7 @@ class kclock(wx.Frame, kaswxlib.FPSlogic):
             self.doSecondly()
             # print self.statFPS.datadict["avg"]
         self.lastTime = thistime
+        self._OnPaint(None)
 
     def doSecondly(self):
         datetext = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())

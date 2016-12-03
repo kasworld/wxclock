@@ -208,13 +208,12 @@ class FPSlogic():
                 self.repeatingcalldict[fn]["repeatcount"] += 1
                 fn(d)
 
-        nexttime = (time.time() - thistime) * 1000
-        newdur = min(1000, max(difftime * 800, 1000 / self.maxFPS) - nexttime)
-        if newdur < 1:
-            newdur = 1
-        # print newdur,nexttime,difftime,self.maxFPS
-        #newdur = 1
-        self.timer.Start(newdur, oneShot=True)
+        idealframems = 1000 / self.maxFPS
+        thisframems = (time.time() - thistime) * 1000
+        thisframedelay = idealframems - thisframems
+        if thisframedelay < 1:
+            thisframedelay = 1
+        self.timer.Start(thisframedelay, oneShot=True)
 
     def FPSTimerDel(self):
         self.timer.Stop()
