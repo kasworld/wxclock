@@ -202,11 +202,14 @@ class FPSlogic():
 
         if not self.pause:
             self.doFPSlogic(frameinfo)
-        for fn, d in self.repeatingcalldict.iteritems():
-            if thistime - d["oldtime"] > d["dursec"]:
-                self.repeatingcalldict[fn]["oldtime"] = thistime
-                self.repeatingcalldict[fn]["repeatcount"] += 1
-                fn(d)
+        try :
+            for fn, d in self.repeatingcalldict.iteritems():
+                if thistime - d["oldtime"] > d["dursec"]:
+                    self.repeatingcalldict[fn]["oldtime"] = thistime
+                    self.repeatingcalldict[fn]["repeatcount"] += 1
+                    fn(d)
+        except Exception as e:
+            print e
 
         idealframems = 1000 / self.maxFPS
         thisframems = (time.time() - thistime) * 1000
