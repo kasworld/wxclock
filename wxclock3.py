@@ -115,15 +115,22 @@ def drawAnalogClock(dc, wdposx, wdposy, maxLen, mst):
 
 
 def drawTextRaw2DC(dc, pstr, x, y, r=True, g=True, b=True, depth=2):
-    depth = max(2, depth)
     w, h = dc.GetTextExtent(pstr)
-    for i in range(0, depth):
-        cr = int(i * 255. / (depth - 1))
+    if depth <= 1:
+        cr = 255
         dc.SetTextForeground(
             wx.Colour(cr if r else cr * .8, cr if g else cr * .8,
                       cr if b else cr * .8, 0x80)
         )
-        dc.DrawText(pstr,  x - w / 2 + depth - i,  y - h / 2 + depth - i)
+        dc.DrawText(pstr,  x - w / 2,  y - h / 2)
+    else:
+        for i in range(0, depth):
+            cr = int(i * 255. / (depth - 1))
+            dc.SetTextForeground(
+                wx.Colour(cr if r else cr * .8, cr if g else cr * .8,
+                          cr if b else cr * .8, 0x80)
+            )
+            dc.DrawText(pstr,  x - w / 2 + depth - i,  y - h / 2 + depth - i)
 
 
 def makeCalendarImg(bx, by):
@@ -140,7 +147,8 @@ def makeCalendarImg(bx, by):
     # w, h = dc.GetTextExtent("00")
     w = bx / 7
     h = by / 7
-    depth = min(bx, by) / 100
+    # depth = min(bx, by) / 100
+    depth = 1
 
     disptext = "{0:%Y-%m-%d}".format(datetime.datetime.now())
     drawTextRaw2DC(dc, disptext, bx / 3, h / 2, depth=depth)
@@ -182,7 +190,8 @@ def makeDigiClockFont(bx, by):
 
 def makeDigiClockImg(bx, by, smallFont, bigFont, fps):
     bitMap = wx.EmptyBitmap(bx, by / 2)
-    depth = min(bx, by / 2) / 50
+    # depth = min(bx, by / 2) / 50
+    depth = 1
 
     dc = wx.MemoryDC()
     dc.SelectObject(bitMap)
