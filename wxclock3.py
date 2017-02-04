@@ -204,8 +204,8 @@ def makeDigiClockImg(bx, by, smallFont, bigFont, fps):
     drawTextRaw2DC(dc, datetext, bx / 2, bfy / 2, depth=depth)
 
     dc.SetFont(smallFont)
-    disptext = "{0:5.1f}MHz {1:4.1f}C {2:4.1f}FPS".format(
-        kaswlib.CPUClock() / 1000, kaswlib.CPUTemp(), fps)
+    disptext = "{0:5.1f}MHz {1:4.1f}C {2:4.1f}FPS {3}".format(
+        kaswlib.CPUClock() / 1000, kaswlib.CPUTemp(), fps, kaswlib.getMyIPAddress())
     sfx, sfy = dc.GetTextExtent(disptext)
     drawTextRaw2DC(dc, disptext, bx / 2, by / 2 - sfy, depth=depth / 4)
 
